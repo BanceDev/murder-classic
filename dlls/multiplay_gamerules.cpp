@@ -187,8 +187,6 @@ void CHalfLifeMultiplay::RefreshSkillData()
 #define MURDERER_WIN 3
 #define BYSTANDER_WIN 4
 
-//=========================================================
-//=========================================================
 void CHalfLifeMultiplay::Think()
 {
 	g_VoiceGameMgr.Update(gpGlobals->frametime);
@@ -240,7 +238,7 @@ void CHalfLifeMultiplay::StartRound() {
 			} else {
 				pPlayer->m_iPlayerRole = 0;
 			}
-			// TODO: Make the player spawn back in somehow??
+			pPlayer->Spawn();
 			MESSAGE_BEGIN(MSG_ONE, gmsgRole, NULL, pPlayer->pev);
 			WRITE_BYTE(pPlayer->m_iPlayerRole);
 			MESSAGE_END();
@@ -419,11 +417,9 @@ bool CHalfLifeMultiplay::FPlayerCanTakeDamage(CBasePlayer* pPlayer, CBaseEntity*
 //=========================================================
 void CHalfLifeMultiplay::PlayerThink(CBasePlayer* pPlayer)
 {
-	if ((pPlayer->m_afButtonPressed & (IN_DUCK | IN_ATTACK | IN_ATTACK2 | IN_USE | IN_JUMP)) != 0) {
-		if (!m_iInGame) {
-			//StartRound();
-			pPlayer->Respawn();
-		}
+	if(!m_iInGame) {
+		if ((pPlayer->m_afButtonPressed & (IN_DUCK | IN_ATTACK | IN_ATTACK2 | IN_USE | IN_JUMP)) != 0)
+			StartRound();
 	}
 }
 
@@ -499,13 +495,12 @@ void CHalfLifeMultiplay::PlayerKilled(CBasePlayer* pVictim, entvars_t* pKiller, 
 {
 	FireTargets("game_playerdie", pVictim, pVictim, USE_TOGGLE, 0);
 
-	/*edict_t* pentSpawnSpot = g_pGameRules->GetPlayerSpawnSpot(pVictim);
+	edict_t* pentSpawnSpot = g_pGameRules->GetPlayerSpawnSpot(pVictim);
 	pVictim->StartObserver(pVictim->pev->origin, VARS(pentSpawnSpot)->angles);
 
 	// notify other clients of player switching to spectator mode
 	UTIL_ClientPrintAll(HUD_PRINTNOTIFY, UTIL_VarArgs("%s switched to spectator mode\n",
 												(!FStringNull(pVictim->pev->netname) && STRING(pVictim->pev->netname)[0] != 0) ? STRING(pVictim->pev->netname) : "unconnected"));
-*/
 }
 
 //=========================================================
@@ -978,7 +973,6 @@ void CHalfLifeMultiplay::GoToIntermission(int iWinner)
 			MESSAGE_END();
 		}
 	}
-	StartRound();
 }
 
 #define MAX_RULE_BUFFER 1024
