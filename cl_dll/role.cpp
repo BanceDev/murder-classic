@@ -50,12 +50,17 @@ bool CHudRole::MsgFunc_Role(const char* pszName, int iSize, void* pbuf)
 	int role = READ_BYTE();
 
     if (role == 0) {
-        m_chPlayerRole = "bystander.";
+        m_chPlayerRole = "BYSTANDER";
     } else if (role == 1) {
-        m_chPlayerRole = "murderer.";
-    } else {
-        m_chPlayerRole = "detective.";
+        m_chPlayerRole = "MURDERER";
+    } else if (role == 2) {
+        m_chPlayerRole = "DETECTIVE";
+    } else if (role == 3) {
+        m_chPlayerRole = "MURDERER WINS";
+    } else if (role == 4) {
+        m_chPlayerRole = "BYSTANDERS WIN";
     }
+    m_fFade = 150;
 	
 
 	return true;
@@ -72,8 +77,8 @@ bool CHudRole::Draw(float flTime)
 
     if (0 != m_fFade)
     {
-        if (m_fFade > 40)
-            m_fFade = 40;
+        if (m_fFade > 150)
+            m_fFade = 150;
 
         m_fFade -= (gHUD.m_flTimeDelta * 20);
         if (m_fFade <= 0)
@@ -81,10 +86,7 @@ bool CHudRole::Draw(float flTime)
             a = 255;
             m_fFade = 0;
         }
-        if (m_fFade <= 10)
-            a = (m_fFade / 10) * 255;
-        else
-            a = 255;
+        a = (m_fFade / 150) * 255;
     }
     else
         a = 0;
@@ -92,7 +94,7 @@ bool CHudRole::Draw(float flTime)
     ScaleColors(r, g, b, a);
 
     char fragMessage[256];
-    sprintf(fragMessage, "You are a %s", m_chPlayerRole);
+    sprintf(fragMessage, "%s", m_chPlayerRole);
 	y = (ScreenHeight / 2) - gHUD.m_iFontHeight * 5;
 	x = ScreenWidth / 2 - (6.5 * strlen(fragMessage))/2;
 

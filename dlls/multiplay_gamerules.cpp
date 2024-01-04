@@ -90,7 +90,30 @@ CHalfLifeMultiplay::CHalfLifeMultiplay()
 			SERVER_COMMAND(szCommand);
 		}
 	}
-	m_iClients = 0;
+}
+
+/*
+==============
+CountPlayers
+
+Determine the current # of active players on the server for map cycling logic
+==============
+*/
+int CountPlayers()
+{
+	int num = 0;
+
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		CBaseEntity* pEnt = UTIL_PlayerByIndex(i);
+
+		if (pEnt)
+		{
+			num = num + 1;
+		}
+	}
+
+	return num;
 }
 
 bool CHalfLifeMultiplay::ClientCommand(CBasePlayer* pPlayer, const char* pcmd)
@@ -161,6 +184,8 @@ void CHalfLifeMultiplay::RefreshSkillData()
 
 // longest the intermission can last, in seconds
 #define MAX_INTERMISSION_TIME 120
+#define MURDERER_WIN 3
+#define BYSTANDER_WIN 4
 
 //=========================================================
 //=========================================================
@@ -169,123 +194,53 @@ void CHalfLifeMultiplay::Think()
 	g_VoiceGameMgr.Update(gpGlobals->frametime);
 
 	///// Check game rules /////
-	static int last_frags;
-	static int last_time;
-
-	int frags_remaining = 0;
-	int time_remaining = 0;
-
-	if (g_fGameOver) // someone else quit the game already
-	{
-		// bounds check
-		int time = (int)CVAR_GET_FLOAT("mp_chattime");
-		if (time < 1)
-			CVAR_SET_STRING("mp_chattime", "1");
-		else if (time > MAX_INTERMISSION_TIME)
-			CVAR_SET_STRING("mp_chattime", UTIL_dtos1(MAX_INTERMISSION_TIME));
-
-		m_flIntermissionEndTime = m_flIntermissionStartTime + mp_chattime.value;
-
-		// check to see if we should start the round
-		if (m_flIntermissionEndTime < gpGlobals->time)
-		{
-			if (m_iEndIntermissionButtonHit // check that someone has pressed a key, or the max intermission time is over
-				|| ((m_flIntermissionStartTime + MAX_INTERMISSION_TIME) < gpGlobals->time))
-				StartRound();
-		}
-
-		return;
-	}
-
-	float flTimeLimit = timelimit.value * 60;
-	float flFragLimit = fraglimit.value;
-
-	time_remaining = (int)(0 != flTimeLimit ? (flTimeLimit - gpGlobals->time) : 0);
-
-	if (flTimeLimit != 0 && gpGlobals->time >= flTimeLimit)
-	{
-		GoToIntermission();
-		return;
-	}
-
-	if (0 != flFragLimit)
-	{
-		int bestfrags = 9999;
-		int remain;
-
-		// check if any player is over the frag limit
-		for (int i = 1; i <= gpGlobals->maxClients; i++)
-		{
-			CBaseEntity* pPlayer = UTIL_PlayerByIndex(i);
-
-			if (pPlayer && pPlayer->pev->frags >= flFragLimit)
-			{
-				GoToIntermission();
-				return;
-			}
-
-
-			if (pPlayer)
-			{
-				remain = flFragLimit - pPlayer->pev->frags;
-				if (remain < bestfrags)
-				{
-					bestfrags = remain;
-				}
-			}
-		}
-		frags_remaining = bestfrags;
-	}
-
-	// Updates when frags change
-	if (frags_remaining != last_frags)
-	{
-		g_engfuncs.pfnCvar_DirectSet(&fragsleft, UTIL_VarArgs("%i", frags_remaining));
-	}
-
-	// Updates once per second
-	if (timeleft.value != last_time)
-	{
-		g_engfuncs.pfnCvar_DirectSet(&timeleft, UTIL_VarArgs("%i", time_remaining));
-	}
-
-	last_frags = frags_remaining;
-	last_time = time_remaining;
 
 	//	Murder Game Logic
-	if (m_iClients >= 3 && !m_iInGame) {
+	if (CountPlayers() >= 3 && !m_iInGame) {
 		// start a round
-		GoToIntermission();
+		StartRound();
 	}
 
-	// handle win states
+
+
+	///// handle win states /////
+
+	// bystander win
 	CBasePlayer* pMurderer = (CBasePlayer*)(UTIL_PlayerByIndex(m_iMurderer));
 	if (pMurderer && pMurderer->IsPlayer()) {
 		if (!pMurderer->IsAlive()) {
-			// do something about win
-			GoToIntermission();
+			// tell all clients who won
+			GoToIntermission(BYSTANDER_WIN);
 		}
 	}
+
+	// murderer win
+
 	
 }
 
 
 void CHalfLifeMultiplay::StartRound() {
-	int murderer = g_engfuncs.pfnRandomLong(1, m_iClients);
-	int detective = g_engfuncs.pfnRandomLong(1, m_iClients);
+	m_iInGame = false;
+	int murderer = g_engfuncs.pfnRandomLong(1, CountPlayers());
+	int detective = 2;//g_engfuncs.pfnRandomLong(1, CountPlayers());
 	while (detective == murderer) {
-		detective = g_engfuncs.pfnRandomLong(1, m_iClients);
+		detective = g_engfuncs.pfnRandomLong(1, CountPlayers());
 	}
-	for (int i = 1; i <= m_iClients; i++) {
+	for (int i = 1; i <= CountPlayers(); i++) {
 		CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
 		if (pPlayer && pPlayer->IsPlayer()) {
 			if (i == murderer) {
 				pPlayer->m_iPlayerRole = 1;
+				pPlayer->GiveNamedItem("weapon_crowbar");
 			} else if (i == detective) {
 				pPlayer->m_iPlayerRole = 2;
+				pPlayer->GiveNamedItem("weapon_357");
+			pPlayer->GiveAmmo(6, "357", _357_MAX_CARRY);
 			} else {
 				pPlayer->m_iPlayerRole = 0;
 			}
+			// TODO: Make the player spawn back in somehow??
 			MESSAGE_BEGIN(MSG_ONE, gmsgRole, NULL, pPlayer->pev);
 			WRITE_BYTE(pPlayer->m_iPlayerRole);
 			MESSAGE_END();
@@ -364,7 +319,6 @@ bool CHalfLifeMultiplay::FShouldSwitchWeapon(CBasePlayer* pPlayer, CBasePlayerIt
 bool CHalfLifeMultiplay::ClientConnected(edict_t* pEntity, const char* pszName, const char* pszAddress, char szRejectReason[128])
 {
 	g_VoiceGameMgr.ClientConnected(pEntity);
-	m_iClients += 1;
 	return true;
 }
 
@@ -415,7 +369,6 @@ void CHalfLifeMultiplay::InitHUD(CBasePlayer* pl)
 //=========================================================
 void CHalfLifeMultiplay::ClientDisconnected(edict_t* pClient)
 {
-	m_iClients -= 1;
 
 	if (pClient)
 	{
@@ -466,16 +419,11 @@ bool CHalfLifeMultiplay::FPlayerCanTakeDamage(CBasePlayer* pPlayer, CBaseEntity*
 //=========================================================
 void CHalfLifeMultiplay::PlayerThink(CBasePlayer* pPlayer)
 {
-	if (g_fGameOver)
-	{
-		// check for button presses
-		if ((pPlayer->m_afButtonPressed & (IN_DUCK | IN_ATTACK | IN_ATTACK2 | IN_USE | IN_JUMP)) != 0)
-			m_iEndIntermissionButtonHit = true;
-
-		// clear attack/use commands from player
-		pPlayer->m_afButtonPressed = 0;
-		pPlayer->pev->button = 0;
-		pPlayer->m_afButtonReleased = 0;
+	if ((pPlayer->m_afButtonPressed & (IN_DUCK | IN_ATTACK | IN_ATTACK2 | IN_USE | IN_JUMP)) != 0) {
+		if (!m_iInGame) {
+			//StartRound();
+			pPlayer->Respawn();
+		}
 	}
 }
 
@@ -519,7 +467,7 @@ void CHalfLifeMultiplay::PlayerSpawn(CBasePlayer* pPlayer)
 //=========================================================
 bool CHalfLifeMultiplay::FPlayerCanRespawn(CBasePlayer* pPlayer)
 {
-	return false;
+	return !m_iInGame;
 }
 
 //=========================================================
@@ -551,12 +499,13 @@ void CHalfLifeMultiplay::PlayerKilled(CBasePlayer* pVictim, entvars_t* pKiller, 
 {
 	FireTargets("game_playerdie", pVictim, pVictim, USE_TOGGLE, 0);
 
-	edict_t* pentSpawnSpot = g_pGameRules->GetPlayerSpawnSpot(pVictim);
+	/*edict_t* pentSpawnSpot = g_pGameRules->GetPlayerSpawnSpot(pVictim);
 	pVictim->StartObserver(pVictim->pev->origin, VARS(pentSpawnSpot)->angles);
 
 	// notify other clients of player switching to spectator mode
 	UTIL_ClientPrintAll(HUD_PRINTNOTIFY, UTIL_VarArgs("%s switched to spectator mode\n",
 												(!FStringNull(pVictim->pev->netname) && STRING(pVictim->pev->netname)[0] != 0) ? STRING(pVictim->pev->netname) : "unconnected"));
+*/
 }
 
 //=========================================================
@@ -1004,7 +953,7 @@ bool CHalfLifeMultiplay::PlayFootstepSounds(CBasePlayer* pl, float fvol)
 
 bool CHalfLifeMultiplay::FAllowFlashlight()
 {
-	return flashlight.value != 0;
+	return true;
 }
 
 //=========================================================
@@ -1018,28 +967,18 @@ bool CHalfLifeMultiplay::FAllowMonsters()
 //======== CHalfLifeMultiplay private functions ===========
 #define INTERMISSION_TIME 6
 
-void CHalfLifeMultiplay::GoToIntermission()
+void CHalfLifeMultiplay::GoToIntermission(int iWinner)
 {
-	if (g_fGameOver)
-		return; // intermission has already been triggered, so ignore.
-
-	MESSAGE_BEGIN(MSG_ALL, SVC_INTERMISSION);
-	MESSAGE_END();
-
-	// bounds check
-	int time = (int)CVAR_GET_FLOAT("mp_chattime");
-	if (time < 1)
-		CVAR_SET_STRING("mp_chattime", "1");
-	else if (time > MAX_INTERMISSION_TIME)
-		CVAR_SET_STRING("mp_chattime", UTIL_dtos1(MAX_INTERMISSION_TIME));
-
-	m_flIntermissionEndTime = gpGlobals->time + ((int)mp_chattime.value);
-	m_flIntermissionStartTime = gpGlobals->time;
-
-	g_fGameOver = true;
-	m_iEndIntermissionButtonHit = false;
-
-	m_iInGame = false;
+	// handle endgame
+	for (int i = 1; i <= CountPlayers(); i++) {
+		CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
+		if (pPlayer && pPlayer->IsPlayer()) {
+			MESSAGE_BEGIN(MSG_ONE, gmsgRole, NULL, pPlayer->pev);
+			WRITE_BYTE(iWinner);
+			MESSAGE_END();
+		}
+	}
+	StartRound();
 }
 
 #define MAX_RULE_BUFFER 1024
@@ -1317,29 +1256,7 @@ bool ReloadMapCycleFile(char* filename, mapcycle_t* cycle)
 	return true;
 }
 
-/*
-==============
-CountPlayers
 
-Determine the current # of active players on the server for map cycling logic
-==============
-*/
-int CountPlayers()
-{
-	int num = 0;
-
-	for (int i = 1; i <= gpGlobals->maxClients; i++)
-	{
-		CBaseEntity* pEnt = UTIL_PlayerByIndex(i);
-
-		if (pEnt)
-		{
-			num = num + 1;
-		}
-	}
-
-	return num;
-}
 
 /*
 ==============
@@ -1528,6 +1445,7 @@ void CHalfLifeMultiplay::ChangeLevel()
 	{
 		SERVER_COMMAND(szCommands);
 	}
+	
 }
 
 #define MAX_MOTD_CHUNK 60

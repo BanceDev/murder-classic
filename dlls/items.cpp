@@ -349,6 +349,7 @@ class CItemClue : public CItem
 	void Precache() override
 	{
 		PRECACHE_MODEL("models/w_clue.mdl");
+		PRECACHE_SOUND("buttons/blip1.wav");
 	}
 	bool MyTouch(CBasePlayer* pPlayer) override
 	{
@@ -356,17 +357,17 @@ class CItemClue : public CItem
 		if (pPlayer->m_iPlayerRole != 0) {
 			return false;
 		}
-		
+
 		if (pPlayer->m_iClues >= 5) {
 			return false;
 		}
 
 		pPlayer->m_iClues += 1;
+		EMIT_SOUND(ENT(pev), CHAN_VOICE, "buttons/blip1.wav", 50, ATTN_NORM);
 		if (pPlayer->m_iClues >= 5) {
 			pPlayer->GiveNamedItem("weapon_357");
 			pPlayer->GiveAmmo(6, "357", _357_MAX_CARRY); // 1 full reloads
 		}
-		//TODO: Add sound
 		return true;
 	}
 };

@@ -352,20 +352,20 @@ public:
 	bool FAllowMonsters() override;
 
 	// Immediately end a multiplayer game
-	void EndMultiplayerGame() override { GoToIntermission(); }
+	void EndMultiplayerGame() override { GoToIntermission(3); }
 
 	// Murder FUnctions
 	void StartRound();
 
 protected:
 	virtual void ChangeLevel();
-	virtual void GoToIntermission();
+	virtual void GoToIntermission(int iWinner);
 	float m_flIntermissionStartTime = 0;
 	float m_flIntermissionEndTime = 0;
 	bool m_iEndIntermissionButtonHit;
 	bool m_iInGame = false;
 	int m_iClients = 0;
-	int m_iMurderer;
+	int m_iMurderer = 1;
 	void SendMOTDToClient(edict_t* client);
 };
 
