@@ -2812,6 +2812,7 @@ void CBasePlayer::Spawn()
 	m_bitsDamageType = 0;
 	m_afPhysicsFlags = 0;
 	m_fLongJump = false; // no longjump module.
+	m_iClues = 0;
 
 	g_engfuncs.pfnSetPhysicsKeyValue(edict(), "slj", "0");
 	g_engfuncs.pfnSetPhysicsKeyValue(edict(), "hl", "1");

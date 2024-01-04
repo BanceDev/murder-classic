@@ -90,6 +90,7 @@ CHalfLifeMultiplay::CHalfLifeMultiplay()
 			SERVER_COMMAND(szCommand);
 		}
 	}
+	m_iClients = 0;
 }
 
 bool CHalfLifeMultiplay::ClientCommand(CBasePlayer* pPlayer, const char* pcmd)
@@ -118,13 +119,13 @@ void CHalfLifeMultiplay::RefreshSkillData()
 	gSkillData.suitchargerCapacity = 30;
 
 	// Crowbar whack
-	gSkillData.plrDmgCrowbar = 25;
+	gSkillData.plrDmgCrowbar = 999;
 
 	// Glock Round
 	gSkillData.plrDmg9MM = 12;
 
 	// 357 Round
-	gSkillData.plrDmg357 = 40;
+	gSkillData.plrDmg357 = 999;
 
 	// MP5 Round
 	gSkillData.plrDmgMP5 = 12;
@@ -185,12 +186,12 @@ void CHalfLifeMultiplay::Think()
 
 		m_flIntermissionEndTime = m_flIntermissionStartTime + mp_chattime.value;
 
-		// check to see if we should change levels now
+		// check to see if we should start the round
 		if (m_flIntermissionEndTime < gpGlobals->time)
 		{
 			if (m_iEndIntermissionButtonHit // check that someone has pressed a key, or the max intermission time is over
 				|| ((m_flIntermissionStartTime + MAX_INTERMISSION_TIME) < gpGlobals->time))
-				ChangeLevel(); // intermission is over
+				StartRound();
 		}
 
 		return;
@@ -250,6 +251,45 @@ void CHalfLifeMultiplay::Think()
 
 	last_frags = frags_remaining;
 	last_time = time_remaining;
+
+	//	Murder Game Logic
+	if (m_iClients >= 3 && !m_iInGame) {
+		// start a round
+		GoToIntermission();
+	}
+
+	// handle win states
+	CBasePlayer* pMurderer = (CBasePlayer*)(UTIL_PlayerByIndex(m_iMurderer));
+	if (pMurderer && pMurderer->IsPlayer()) {
+		if (!pMurderer->IsAlive()) {
+			// do something about win
+			GoToIntermission();
+		}
+	}
+	
+}
+
+
+void CHalfLifeMultiplay::StartRound() {
+	int murderer = g_engfuncs.pfnRandomLong(1, m_iClients);
+	int detective = g_engfuncs.pfnRandomLong(1, m_iClients);
+	while (detective == murderer) {
+		detective = g_engfuncs.pfnRandomLong(1, m_iClients);
+	}
+	for (int i = 1; i <= m_iClients; i++) {
+		CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
+		if (pPlayer && pPlayer->IsPlayer()) {
+			if (i == murderer) {
+				pPlayer->m_iPlayerRole = 1;
+			} else if (i == detective) {
+				pPlayer->m_iPlayerRole = 2;
+			} else {
+				pPlayer->m_iPlayerRole = 0;
+			}
+		}
+	}
+	m_iMurderer = murderer;
+	m_iInGame = true;
 }
 
 
@@ -321,6 +361,7 @@ bool CHalfLifeMultiplay::FShouldSwitchWeapon(CBasePlayer* pPlayer, CBasePlayerIt
 bool CHalfLifeMultiplay::ClientConnected(edict_t* pEntity, const char* pszName, const char* pszAddress, char szRejectReason[128])
 {
 	g_VoiceGameMgr.ClientConnected(pEntity);
+	m_iClients += 1;
 	return true;
 }
 
@@ -337,23 +378,14 @@ void CHalfLifeMultiplay::InitHUD(CBasePlayer* pl)
 	UTIL_ClientPrintAll(HUD_PRINTNOTIFY, UTIL_VarArgs("%s has joined the game\n",
 											 (!FStringNull(pl->pev->netname) && STRING(pl->pev->netname)[0] != 0) ? STRING(pl->pev->netname) : "unconnected"));
 
-	// team match?
-	if (g_teamplay)
-	{
-		UTIL_LogPrintf("\"%s<%i><%s><%s>\" entered the game\n",
-			STRING(pl->pev->netname),
-			GETPLAYERUSERID(pl->edict()),
-			GETPLAYERAUTHID(pl->edict()),
-			g_engfuncs.pfnInfoKeyValue(g_engfuncs.pfnGetInfoKeyBuffer(pl->edict()), "model"));
-	}
-	else
-	{
-		UTIL_LogPrintf("\"%s<%i><%s><%i>\" entered the game\n",
-			STRING(pl->pev->netname),
-			GETPLAYERUSERID(pl->edict()),
-			GETPLAYERAUTHID(pl->edict()),
-			GETPLAYERUSERID(pl->edict()));
-	}
+
+
+	UTIL_LogPrintf("\"%s<%i><%s><%i>\" entered the game\n",
+		STRING(pl->pev->netname),
+		GETPLAYERUSERID(pl->edict()),
+		GETPLAYERAUTHID(pl->edict()),
+		GETPLAYERUSERID(pl->edict()));
+
 
 	UpdateGameMode(pl);
 
@@ -369,24 +401,6 @@ void CHalfLifeMultiplay::InitHUD(CBasePlayer* pl)
 
 	SendMOTDToClient(pl->edict());
 
-	// loop through all active players and send their score info to the new client
-	for (int i = 1; i <= gpGlobals->maxClients; i++)
-	{
-		// FIXME:  Probably don't need to cast this just to read m_iDeaths
-		CBasePlayer* plr = (CBasePlayer*)UTIL_PlayerByIndex(i);
-
-		if (plr)
-		{
-			MESSAGE_BEGIN(MSG_ONE, gmsgScoreInfo, NULL, pl->edict());
-			WRITE_BYTE(i); // client number
-			WRITE_SHORT(plr->pev->frags);
-			WRITE_SHORT(plr->m_iDeaths);
-			WRITE_SHORT(0);
-			WRITE_SHORT(GetTeamIndex(plr->m_szTeamName) + 1);
-			MESSAGE_END();
-		}
-	}
-
 	if (g_fGameOver)
 	{
 		MESSAGE_BEGIN(MSG_ONE, SVC_INTERMISSION, NULL, pl->edict());
@@ -398,6 +412,8 @@ void CHalfLifeMultiplay::InitHUD(CBasePlayer* pl)
 //=========================================================
 void CHalfLifeMultiplay::ClientDisconnected(edict_t* pClient)
 {
+	m_iClients -= 1;
+
 	if (pClient)
 	{
 		CBasePlayer* pPlayer = (CBasePlayer*)CBaseEntity::Instance(pClient);
@@ -433,19 +449,7 @@ void CHalfLifeMultiplay::ClientDisconnected(edict_t* pClient)
 //=========================================================
 float CHalfLifeMultiplay::FlPlayerFallDamage(CBasePlayer* pPlayer)
 {
-	int iFallDamage = (int)falldamage.value;
-
-	switch (iFallDamage)
-	{
-	case 1: //progressive
-		pPlayer->m_flFallVelocity -= PLAYER_MAX_SAFE_FALL_SPEED;
-		return pPlayer->m_flFallVelocity * DAMAGE_FOR_FALL_SPEED;
-		break;
-	default:
-	case 0: // fixed
-		return 10;
-		break;
-	}
+	return 0;
 }
 
 //=========================================================
@@ -493,11 +497,16 @@ void CHalfLifeMultiplay::PlayerSpawn(CBasePlayer* pPlayer)
 		addDefault = false;
 	}
 
-	if (addDefault)
+	if (addDefault) // TODO: role based weapons
 	{
-		pPlayer->GiveNamedItem("weapon_crowbar");
-		pPlayer->GiveNamedItem("weapon_9mmhandgun");
-		pPlayer->GiveAmmo(68, "9mm", _9MM_MAX_CARRY); // 4 full reloads
+		if (pPlayer->m_iPlayerRole == 1) {
+			pPlayer->GiveNamedItem("weapon_crowbar");
+		} else if (pPlayer->m_iPlayerRole == 2) {
+			pPlayer->GiveNamedItem("weapon_357");
+			pPlayer->GiveAmmo(6, "357", _357_MAX_CARRY);
+		}
+		
+		
 	}
 
 	pPlayer->m_iAutoWepSwitch = originalAutoWepSwitch;
@@ -507,7 +516,7 @@ void CHalfLifeMultiplay::PlayerSpawn(CBasePlayer* pPlayer)
 //=========================================================
 bool CHalfLifeMultiplay::FPlayerCanRespawn(CBasePlayer* pPlayer)
 {
-	return true;
+	return false;
 }
 
 //=========================================================
@@ -528,7 +537,7 @@ bool CHalfLifeMultiplay::AllowAutoTargetCrosshair()
 //=========================================================
 int CHalfLifeMultiplay::IPointsForKill(CBasePlayer* pAttacker, CBasePlayer* pKilled)
 {
-	return 1;
+	return 0;
 }
 
 
@@ -537,65 +546,14 @@ int CHalfLifeMultiplay::IPointsForKill(CBasePlayer* pAttacker, CBasePlayer* pKil
 //=========================================================
 void CHalfLifeMultiplay::PlayerKilled(CBasePlayer* pVictim, entvars_t* pKiller, entvars_t* pInflictor)
 {
-	DeathNotice(pVictim, pKiller, pInflictor);
-
-	pVictim->m_iDeaths += 1;
-
-
 	FireTargets("game_playerdie", pVictim, pVictim, USE_TOGGLE, 0);
-	CBasePlayer* peKiller = NULL;
-	CBaseEntity* ktmp = CBaseEntity::Instance(pKiller);
-	if (ktmp && (ktmp->Classify() == CLASS_PLAYER))
-		peKiller = (CBasePlayer*)ktmp;
 
-	if (pVictim->pev == pKiller)
-	{ // killed self
-		pKiller->frags -= 1;
-	}
-	else if (ktmp && ktmp->IsPlayer())
-	{
-		// if a player dies in a deathmatch game and the killer is a client, award the killer some points
-		pKiller->frags += IPointsForKill(peKiller, pVictim);
+	edict_t* pentSpawnSpot = g_pGameRules->GetPlayerSpawnSpot(pVictim);
+	pVictim->StartObserver(pVictim->pev->origin, VARS(pentSpawnSpot)->angles);
 
-		FireTargets("game_playerkill", ktmp, ktmp, USE_TOGGLE, 0);
-	}
-	else
-	{ // killed by the world
-		pKiller->frags -= 1;
-	}
-
-	// update the scores
-	// killed scores
-	MESSAGE_BEGIN(MSG_ALL, gmsgScoreInfo);
-	WRITE_BYTE(ENTINDEX(pVictim->edict()));
-	WRITE_SHORT(pVictim->pev->frags);
-	WRITE_SHORT(pVictim->m_iDeaths);
-	WRITE_SHORT(0);
-	WRITE_SHORT(GetTeamIndex(pVictim->m_szTeamName) + 1);
-	MESSAGE_END();
-
-	// killers score, if it's a player
-	CBaseEntity* ep = CBaseEntity::Instance(pKiller);
-	if (ep && ep->Classify() == CLASS_PLAYER)
-	{
-		CBasePlayer* PK = (CBasePlayer*)ep;
-
-		MESSAGE_BEGIN(MSG_ALL, gmsgScoreInfo);
-		WRITE_BYTE(ENTINDEX(PK->edict()));
-		WRITE_SHORT(PK->pev->frags);
-		WRITE_SHORT(PK->m_iDeaths);
-		WRITE_SHORT(0);
-		WRITE_SHORT(GetTeamIndex(PK->m_szTeamName) + 1);
-		MESSAGE_END();
-
-		// let the killer paint another decal as soon as he'd like.
-		PK->m_flNextDecalTime = gpGlobals->time;
-	}
-
-	if (pVictim->HasNamedPlayerItem("weapon_satchel"))
-	{
-		DeactivateSatchels(pVictim);
-	}
+	// notify other clients of player switching to spectator mode
+	UTIL_ClientPrintAll(HUD_PRINTNOTIFY, UTIL_VarArgs("%s switched to spectator mode\n",
+												(!FStringNull(pVictim->pev->netname) && STRING(pVictim->pev->netname)[0] != 0) ? STRING(pVictim->pev->netname) : "unconnected"));
 }
 
 //=========================================================
@@ -920,12 +878,7 @@ void CHalfLifeMultiplay::PlayerGotItem(CBasePlayer* pPlayer, CItem* pItem)
 //=========================================================
 int CHalfLifeMultiplay::ItemShouldRespawn(CItem* pItem)
 {
-	if ((pItem->pev->spawnflags & SF_NORESPAWN) != 0)
-	{
-		return GR_ITEM_RESPAWN_NO;
-	}
-
-	return GR_ITEM_RESPAWN_YES;
+	return false;
 }
 
 
@@ -1082,6 +1035,8 @@ void CHalfLifeMultiplay::GoToIntermission()
 
 	g_fGameOver = true;
 	m_iEndIntermissionButtonHit = false;
+
+	m_iInGame = false;
 }
 
 #define MAX_RULE_BUFFER 1024

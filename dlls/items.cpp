@@ -337,3 +337,38 @@ class CItemLongJump : public CItem
 };
 
 LINK_ENTITY_TO_CLASS(item_longjump, CItemLongJump);
+
+class CItemClue : public CItem
+{
+	void Spawn() override
+	{
+		Precache();
+		SET_MODEL(ENT(pev), "models/w_clue.mdl");
+		CItem::Spawn();
+	}
+	void Precache() override
+	{
+		PRECACHE_MODEL("models/w_clue.mdl");
+	}
+	bool MyTouch(CBasePlayer* pPlayer) override
+	{
+		// only let bystanders get clues
+		if (pPlayer->m_iPlayerRole != 0) {
+			return false;
+		}
+		
+		if (pPlayer->m_iClues >= 5) {
+			return false;
+		}
+
+		pPlayer->m_iClues += 1;
+		if (pPlayer->m_iClues >= 5) {
+			pPlayer->GiveNamedItem("weapon_357");
+			pPlayer->GiveAmmo(6, "357", _357_MAX_CARRY); // 1 full reloads
+		}
+		//TODO: Add sound
+		return true;
+	}
+};
+
+LINK_ENTITY_TO_CLASS(item_clue, CItemClue);

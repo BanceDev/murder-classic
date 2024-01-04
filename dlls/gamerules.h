@@ -354,12 +354,18 @@ public:
 	// Immediately end a multiplayer game
 	void EndMultiplayerGame() override { GoToIntermission(); }
 
+	// Murder FUnctions
+	void StartRound();
+
 protected:
 	virtual void ChangeLevel();
 	virtual void GoToIntermission();
 	float m_flIntermissionStartTime = 0;
 	float m_flIntermissionEndTime = 0;
 	bool m_iEndIntermissionButtonHit;
+	bool m_iInGame = false;
+	int m_iClients = 0;
+	int m_iMurderer;
 	void SendMOTDToClient(edict_t* client);
 };
 

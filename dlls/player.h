@@ -101,6 +101,10 @@ public:
 
 	int random_seed; // See that is shared between client & server for shared weapons code
 
+	// murder player values
+	int m_iPlayerRole = 0;
+	int m_iClues = 0;
+
 	int m_iPlayerSound;		// the index of the sound list slot reserved for this player
 	int m_iTargetVolume;	// ideal sound volume.
 	int m_iWeaponVolume;	// how loud the player's weapon is right now.
