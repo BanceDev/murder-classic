@@ -359,6 +359,7 @@ void CHud::Init()
 	m_Spectator.Init();
 	m_Geiger.Init();
 	m_Train.Init();
+	m_Role.Init();
 	m_Flash.Init();
 	m_Message.Init();
 	m_StatusBar.Init();
@@ -501,6 +502,7 @@ void CHud::VidInit()
 	m_Spectator.VidInit();
 	m_Geiger.VidInit();
 	m_Train.VidInit();
+	m_Role.VidInit();
 	m_Flash.VidInit();
 	m_Message.VidInit();
 	m_StatusBar.VidInit();

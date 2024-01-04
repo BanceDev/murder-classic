@@ -286,6 +286,9 @@ void CHalfLifeMultiplay::StartRound() {
 			} else {
 				pPlayer->m_iPlayerRole = 0;
 			}
+			MESSAGE_BEGIN(MSG_ONE, gmsgRole, NULL, pPlayer->pev);
+			WRITE_BYTE(pPlayer->m_iPlayerRole);
+			MESSAGE_END();
 		}
 	}
 	m_iMurderer = murderer;

@@ -275,6 +275,22 @@ private:
 	int m_HUD_d_skull; // sprite index of skull icon
 };
 
+// Role Message
+//-----------------------------------------------------
+//
+class CHudRole : public CHudBase
+{
+public:
+	bool Init() override;
+	bool VidInit() override;
+	bool Draw(float flTime) override;
+	bool MsgFunc_Role(const char* pszName, int iSize, void* pbuf);
+
+private:
+	char* m_chPlayerRole;
+	float m_fFade;
+};
+
 //
 //-----------------------------------------------------
 //
@@ -561,6 +577,7 @@ public:
 	CHudSpectator m_Spectator;
 	CHudGeiger m_Geiger;
 	CHudBattery m_Battery;
+	CHudRole m_Role;
 	CHudTrain m_Train;
 	CHudFlashlight m_Flash;
 	CHudMessage m_Message;
