@@ -284,6 +284,7 @@ void CHalfLifeMultiplay::StartRound() {
 		if (pPlayer && pPlayer->IsPlayer()) {
 			pPlayer->StopObserver();
 			pPlayer->Spawn();
+			pPlayer->GiveNamedItem("weapon_9mmhandgun");
 			if (i == murderer) {
 				pPlayer->m_iPlayerRole = 1;
 				pPlayer->GiveNamedItem("weapon_crowbar");

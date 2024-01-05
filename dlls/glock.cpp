@@ -30,8 +30,6 @@ void CGlock::Spawn()
 	m_iId = WEAPON_GLOCK;
 	SET_MODEL(ENT(pev), "models/w_9mmhandgun.mdl");
 
-	m_iDefaultAmmo = GLOCK_DEFAULT_GIVE;
-
 	FallInit(); // get ready to fall down.
 }
 
@@ -58,12 +56,12 @@ void CGlock::Precache()
 bool CGlock::GetItemInfo(ItemInfo* p)
 {
 	p->pszName = STRING(pev->classname);
-	p->pszAmmo1 = "9mm";
-	p->iMaxAmmo1 = _9MM_MAX_CARRY;
+	p->pszAmmo1 = NULL;
+	p->iMaxAmmo1 = -1;
 	p->pszAmmo2 = NULL;
 	p->iMaxAmmo2 = -1;
 	p->iMaxClip = GLOCK_MAX_CLIP;
-	p->iSlot = 6;
+	p->iSlot = 0;
 	p->iPosition = 0;
 	p->iFlags = 0;
 	p->iId = m_iId = WEAPON_GLOCK;
@@ -80,12 +78,12 @@ bool CGlock::Deploy()
 
 void CGlock::SecondaryAttack()
 {
-	GlockFire(0.1, 0.2, false);
+	//GlockFire(0.1, 0.2, false);
 }
 
 void CGlock::PrimaryAttack()
 {
-	GlockFire(0.01, 0.3, true);
+	//GlockFire(0.01, 0.3, true);
 }
 
 void CGlock::GlockFire(float flSpread, float flCycleTime, bool fUseAutoAim)
@@ -158,7 +156,7 @@ void CGlock::GlockFire(float flSpread, float flCycleTime, bool fUseAutoAim)
 
 void CGlock::Reload()
 {
-	if (m_pPlayer->ammo_9mm <= 0)
+	/*if (m_pPlayer->ammo_9mm <= 0)
 		return;
 
 	bool iResult;
@@ -171,14 +169,14 @@ void CGlock::Reload()
 	if (iResult)
 	{
 		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
-	}
+	}*/
 }
 
 
 
 void CGlock::WeaponIdle()
 {
-	ResetEmptySound();
+	/*ResetEmptySound();
 
 	m_pPlayer->GetAutoaimVector(AUTOAIM_10DEGREES);
 
@@ -207,7 +205,7 @@ void CGlock::WeaponIdle()
 			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 40.0 / 16.0;
 		}
 		SendWeaponAnim(iAnim);
-	}
+	}*/
 }
 
 
