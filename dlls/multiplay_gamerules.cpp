@@ -375,6 +375,14 @@ bool CHalfLifeMultiplay::FShouldSwitchWeapon(CBasePlayer* pPlayer, CBasePlayerIt
 bool CHalfLifeMultiplay::ClientConnected(edict_t* pEntity, const char* pszName, const char* pszAddress, char szRejectReason[128])
 {
 	g_VoiceGameMgr.ClientConnected(pEntity);
+	// if player joins mid round make them spectate
+	CBasePlayer* pPlayer = (CBasePlayer*)CBaseEntity::Instance(pEntity);
+	if (m_iInGame) {
+		if (pPlayer && pPlayer->IsPlayer()) {
+			edict_t* pentSpawnSpot = g_pGameRules->GetPlayerSpawnSpot(pPlayer);
+			pPlayer->StartObserver(pPlayer->pev->origin, VARS(pentSpawnSpot)->angles);
+		}
+	}
 	return true;
 }
 
