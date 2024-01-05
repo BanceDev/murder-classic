@@ -40,15 +40,18 @@ class CMultiplayGameMgrHelper : public IVoiceGameMgrHelper
 public:
 	bool CanPlayerHearPlayer(CBasePlayer* pListener, CBasePlayer* pTalker) override
 	{
-		if (g_teamplay)
+		// if both are observers
+		if (pTalker->IsObserver() && pListener->IsObserver())
 		{
-			if (g_pGameRules->PlayerRelationship(pListener, pTalker) != GR_TEAMMATE)
-			{
-				return false;
-			}
+			return true;
 		}
 
-		return true;
+		// neither player is an observer
+		if (!pTalker->IsObserver() && !pListener->IsObserver()) {
+			return true;
+		}
+
+		return false;
 	}
 };
 static CMultiplayGameMgrHelper g_GameMgrHelper;
