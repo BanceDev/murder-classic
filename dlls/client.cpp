@@ -564,18 +564,7 @@ void ClientCommand(edict_t* pEntity)
 	}
 	else if (FStrEq(pcmd, "spectate")) // clients wants to become a spectator
 	{
-		// always allow proxies to become a spectator
-		if ((pev->flags & FL_PROXY) != 0 || 0 != allow_spectators.value)
-		{
-			edict_t* pentSpawnSpot = g_pGameRules->GetPlayerSpawnSpot(player);
-			player->StartObserver(pev->origin, VARS(pentSpawnSpot)->angles);
-
-			// notify other clients of player switching to spectator mode
-			UTIL_ClientPrintAll(HUD_PRINTNOTIFY, UTIL_VarArgs("%s switched to spectator mode\n",
-													 (!FStringNull(pev->netname) && STRING(pev->netname)[0] != 0) ? STRING(pev->netname) : "unconnected"));
-		}
-		else
-			ClientPrint(pev, HUD_PRINTCONSOLE, "Spectator mode is disabled.\n");
+		ClientPrint(pev, HUD_PRINTCONSOLE, "Manual spectating is disabled.\n");
 	}
 	else if (FStrEq(pcmd, "specmode")) // new spectator mode
 	{

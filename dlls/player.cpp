@@ -1276,6 +1276,16 @@ void CBasePlayer::StartObserver(Vector vecPosition, Vector vecViewAngle)
 	Observer_SetMode(m_iObserverLastMode);
 }
 
+void CBasePlayer::StopObserver()
+{
+   // Turn off spectator
+   if ( pev->iuser1 || pev->iuser2 )
+   {
+      pev->iuser1 = pev->iuser2 = 0; 
+      m_hObserverTarget = NULL;
+   }
+}
+
 //
 // PlayerUse - handles USE keypress
 //

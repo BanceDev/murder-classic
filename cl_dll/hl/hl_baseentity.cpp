@@ -240,6 +240,7 @@ bool CBasePlayer::IsOnLadder() { return false; }
 void CBasePlayer::PlayerDeathThink() {}
 void CBasePlayer::StartDeathCam() {}
 void CBasePlayer::StartObserver(Vector vecPosition, Vector vecViewAngle) {}
+void CBasePlayer::StopObserver() {}
 void CBasePlayer::PlayerUse() {}
 void CBasePlayer::Jump() {}
 void CBasePlayer::Duck() {}

@@ -282,6 +282,7 @@ void CHalfLifeMultiplay::StartRound() {
 	for (int i = 1; i <= CountPlayers(); i++) {
 		CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
 		if (pPlayer && pPlayer->IsPlayer()) {
+			pPlayer->StopObserver();
 			pPlayer->Spawn();
 			if (i == murderer) {
 				pPlayer->m_iPlayerRole = 1;
@@ -547,13 +548,8 @@ void CHalfLifeMultiplay::PlayerKilled(CBasePlayer* pVictim, entvars_t* pKiller, 
 {
 	FireTargets("game_playerdie", pVictim, pVictim, USE_TOGGLE, 0);
 
-	/*edict_t* pentSpawnSpot = g_pGameRules->GetPlayerSpawnSpot(pVictim);
+	edict_t* pentSpawnSpot = g_pGameRules->GetPlayerSpawnSpot(pVictim);
 	pVictim->StartObserver(pVictim->pev->origin, VARS(pentSpawnSpot)->angles);
-
-	// notify other clients of player switching to spectator mode
-	UTIL_ClientPrintAll(HUD_PRINTNOTIFY, UTIL_VarArgs("%s switched to spectator mode\n",
-												(!FStringNull(pVictim->pev->netname) && STRING(pVictim->pev->netname)[0] != 0) ? STRING(pVictim->pev->netname) : "unconnected"));
-*/
 }
 
 //=========================================================

@@ -49,7 +49,7 @@ bool CHudClue::MsgFunc_Clue(const char* pszName, int iSize, void* pbuf)
 	BEGIN_READ(pbuf, iSize);
 	int clue = READ_BYTE();
     
-    m_fFade = 150;
+    m_fFade = 80;
     m_iClues = clue;
 	
 
@@ -67,8 +67,8 @@ bool CHudClue::Draw(float flTime)
 
     if (0 != m_fFade)
     {
-        if (m_fFade > 150)
-            m_fFade = 150;
+        if (m_fFade > 80)
+            m_fFade = 80;
 
         m_fFade -= (gHUD.m_flTimeDelta * 20);
         if (m_fFade <= 0)
@@ -76,7 +76,7 @@ bool CHudClue::Draw(float flTime)
             a = 255;
             m_fFade = 0;
         }
-        a = (m_fFade / 150) * 255;
+        a = (m_fFade / 80) * 255;
     }
     else
         a = 0;

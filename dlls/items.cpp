@@ -363,6 +363,9 @@ class CItemClue : public CItem
 		}
 
 		pPlayer->m_iClues += 1;
+		MESSAGE_BEGIN(MSG_ONE, gmsgClue, NULL, pPlayer->pev);
+		WRITE_BYTE(pPlayer->m_iClues);
+		MESSAGE_END();
 		EMIT_SOUND(ENT(pev), CHAN_VOICE, "buttons/blip1.wav", 50, ATTN_NORM);
 		if (pPlayer->m_iClues >= 5) {
 			pPlayer->GiveNamedItem("weapon_357");
