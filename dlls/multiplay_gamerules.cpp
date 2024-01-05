@@ -193,6 +193,32 @@ void CHalfLifeMultiplay::Think()
 
 	///// Check game rules /////
 
+	// handle gameover timer
+	if (g_fGameOver) // someone else quit the game already
+	{
+		// bounds check
+		int time = (int)CVAR_GET_FLOAT("mp_chattime");
+		if (time < 1)
+			CVAR_SET_STRING("mp_chattime", "1");
+		else if (time > MAX_INTERMISSION_TIME)
+			CVAR_SET_STRING("mp_chattime", UTIL_dtos1(MAX_INTERMISSION_TIME));
+
+		m_flIntermissionEndTime = m_flIntermissionStartTime + mp_chattime.value;
+
+		// check to see if we should change levels now
+		if (m_flIntermissionEndTime < gpGlobals->time)
+		{
+			if (m_iEndIntermissionButtonHit // check that someone has pressed a key, or the max intermission time is over
+				|| ((m_flIntermissionStartTime + MAX_INTERMISSION_TIME) < gpGlobals->time)) {
+					g_fGameOver = false;
+					m_iInGame = false;
+					StartRound();
+				}
+		}
+
+		return;
+	}
+
 	//	Murder Game Logic
 	if (CountPlayers() >= 3 && !m_iInGame) {
 		// start a round
@@ -228,6 +254,7 @@ void CHalfLifeMultiplay::StartRound() {
 	for (int i = 1; i <= CountPlayers(); i++) {
 		CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
 		if (pPlayer && pPlayer->IsPlayer()) {
+			pPlayer->Spawn();
 			if (i == murderer) {
 				pPlayer->m_iPlayerRole = 1;
 				pPlayer->GiveNamedItem("weapon_crowbar");
@@ -238,7 +265,6 @@ void CHalfLifeMultiplay::StartRound() {
 			} else {
 				pPlayer->m_iPlayerRole = 0;
 			}
-			pPlayer->Spawn();
 			MESSAGE_BEGIN(MSG_ONE, gmsgRole, NULL, pPlayer->pev);
 			WRITE_BYTE(pPlayer->m_iPlayerRole);
 			MESSAGE_END();
@@ -421,6 +447,18 @@ void CHalfLifeMultiplay::PlayerThink(CBasePlayer* pPlayer)
 		if ((pPlayer->m_afButtonPressed & (IN_DUCK | IN_ATTACK | IN_ATTACK2 | IN_USE | IN_JUMP)) != 0)
 			StartRound();
 	}
+
+	if (g_fGameOver)
+	{
+		// check for button presses
+		if ((pPlayer->m_afButtonPressed & (IN_DUCK | IN_ATTACK | IN_ATTACK2 | IN_USE | IN_JUMP)) != 0)
+			m_iEndIntermissionButtonHit = true;
+
+		// clear attack/use commands from player
+		pPlayer->m_afButtonPressed = 0;
+		pPlayer->pev->button = 0;
+		pPlayer->m_afButtonReleased = 0;
+	}
 }
 
 //=========================================================
@@ -442,18 +480,6 @@ void CHalfLifeMultiplay::PlayerSpawn(CBasePlayer* pPlayer)
 	{
 		pWeaponEntity->Touch(pPlayer);
 		addDefault = false;
-	}
-
-	if (addDefault) // TODO: role based weapons
-	{
-		if (pPlayer->m_iPlayerRole == 1) {
-			pPlayer->GiveNamedItem("weapon_crowbar");
-		} else if (pPlayer->m_iPlayerRole == 2) {
-			pPlayer->GiveNamedItem("weapon_357");
-			pPlayer->GiveAmmo(6, "357", _357_MAX_CARRY);
-		}
-		
-		
 	}
 
 	pPlayer->m_iAutoWepSwitch = originalAutoWepSwitch;
@@ -495,12 +521,13 @@ void CHalfLifeMultiplay::PlayerKilled(CBasePlayer* pVictim, entvars_t* pKiller, 
 {
 	FireTargets("game_playerdie", pVictim, pVictim, USE_TOGGLE, 0);
 
-	edict_t* pentSpawnSpot = g_pGameRules->GetPlayerSpawnSpot(pVictim);
+	/*edict_t* pentSpawnSpot = g_pGameRules->GetPlayerSpawnSpot(pVictim);
 	pVictim->StartObserver(pVictim->pev->origin, VARS(pentSpawnSpot)->angles);
 
 	// notify other clients of player switching to spectator mode
 	UTIL_ClientPrintAll(HUD_PRINTNOTIFY, UTIL_VarArgs("%s switched to spectator mode\n",
 												(!FStringNull(pVictim->pev->netname) && STRING(pVictim->pev->netname)[0] != 0) ? STRING(pVictim->pev->netname) : "unconnected"));
+*/
 }
 
 //=========================================================
@@ -964,15 +991,26 @@ bool CHalfLifeMultiplay::FAllowMonsters()
 
 void CHalfLifeMultiplay::GoToIntermission(int iWinner)
 {
+	if (g_fGameOver)
+		return;
 	// handle endgame
 	for (int i = 1; i <= CountPlayers(); i++) {
 		CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
 		if (pPlayer && pPlayer->IsPlayer()) {
+			// kill any remaining players to cycle weapons
+			if (pPlayer->IsAlive()) {
+				FireTargets("game_playerdie", pPlayer, pPlayer, USE_TOGGLE, 0);
+			}
 			MESSAGE_BEGIN(MSG_ONE, gmsgRole, NULL, pPlayer->pev);
 			WRITE_BYTE(iWinner);
 			MESSAGE_END();
 		}
 	}
+	m_flIntermissionEndTime = gpGlobals->time + ((int)mp_chattime.value);
+	m_flIntermissionStartTime = gpGlobals->time;
+
+	g_fGameOver = true;
+	m_iEndIntermissionButtonHit = false;
 }
 
 #define MAX_RULE_BUFFER 1024
