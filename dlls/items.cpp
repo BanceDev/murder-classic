@@ -366,7 +366,6 @@ class CItemClue : public CItem
 		EMIT_SOUND(ENT(pev), CHAN_VOICE, "buttons/blip1.wav", 50, ATTN_NORM);
 		if (pPlayer->m_iClues >= 5) {
 			pPlayer->GiveNamedItem("weapon_357");
-			pPlayer->GiveAmmo(6, "357", _357_MAX_CARRY); // 1 full reloads
 		}
 		return true;
 	}

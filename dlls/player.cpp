@@ -586,7 +586,7 @@ bool CBasePlayer::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, fl
 //=========================================================
 void CBasePlayer::PackDeadPlayerItems()
 {
-	RemoveAllItems(true); // get rid of all weapons
+	RemoveAllItems(true); // now strip off everything that wasn't handled by the code above.
 }
 
 void CBasePlayer::RemoveAllItems(bool removeSuit)

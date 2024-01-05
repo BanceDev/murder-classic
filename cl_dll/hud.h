@@ -291,6 +291,22 @@ private:
 	float m_fFade;
 };
 
+// Clue Message
+//-----------------------------------------------------
+//
+class CHudClue : public CHudBase
+{
+public:
+	bool Init() override;
+	bool VidInit() override;
+	bool Draw(float flTime) override;
+	bool MsgFunc_Clue(const char* pszName, int iSize, void* pbuf);
+
+private:
+	int m_iClues;
+	float m_fFade;
+};
+
 //
 //-----------------------------------------------------
 //
@@ -577,6 +593,7 @@ public:
 	CHudSpectator m_Spectator;
 	CHudGeiger m_Geiger;
 	CHudBattery m_Battery;
+	CHudClue m_Clue;
 	CHudRole m_Role;
 	CHudTrain m_Train;
 	CHudFlashlight m_Flash;

@@ -212,7 +212,18 @@ void CHalfLifeMultiplay::Think()
 				|| ((m_flIntermissionStartTime + MAX_INTERMISSION_TIME) < gpGlobals->time)) {
 					g_fGameOver = false;
 					m_iInGame = false;
-					StartRound();
+					// if a player disconnected and made the game unplayable dont start a new game
+					// just respawn dead players and enter warmup state
+					if (CountPlayers() < 3) {
+						for (int i = 1; i <= CountPlayers(); i++) {
+							CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
+							if (pPlayer && pPlayer->IsPlayer()) {
+								pPlayer->Spawn();
+							}
+						}
+					} else {
+						StartRound();
+					}
 				}
 		}
 
@@ -223,8 +234,14 @@ void CHalfLifeMultiplay::Think()
 	if (CountPlayers() >= 3 && !m_iInGame) {
 		// start a round
 		StartRound();
+	} else if (!m_iInGame) {
+		for (int i = 1; i <= CountPlayers(); i++) {
+			CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
+			MESSAGE_BEGIN(MSG_ONE, gmsgRole, NULL, pPlayer->pev);
+			WRITE_BYTE(5);
+			MESSAGE_END();
+		}
 	}
-
 
 
 	///// handle win states /////
@@ -232,22 +249,33 @@ void CHalfLifeMultiplay::Think()
 	// bystander win
 	CBasePlayer* pMurderer = (CBasePlayer*)(UTIL_PlayerByIndex(m_iMurderer));
 	if (pMurderer && pMurderer->IsPlayer()) {
-		if (!pMurderer->IsAlive()) {
+		if (!pMurderer->IsAlive() && m_iInGame) {
 			// tell all clients who won
 			GoToIntermission(BYSTANDER_WIN);
 		}
 	}
 
 	// murderer win
+	int count = 0;
+	for (int i = 1; i <= CountPlayers(); i++) {
+		CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
+		if (pPlayer->IsAlive()) {
+			count++;
+		}
+	}
+	if (count == 1 && m_iInGame) {
+		GoToIntermission(MURDERER_WIN);
+	}
 
 	
 }
 
 
 void CHalfLifeMultiplay::StartRound() {
+	// setup roles
 	m_iInGame = false;
 	int murderer = g_engfuncs.pfnRandomLong(1, CountPlayers());
-	int detective = 2;//g_engfuncs.pfnRandomLong(1, CountPlayers());
+	int detective = g_engfuncs.pfnRandomLong(1, CountPlayers());
 	while (detective == murderer) {
 		detective = g_engfuncs.pfnRandomLong(1, CountPlayers());
 	}
@@ -261,7 +289,9 @@ void CHalfLifeMultiplay::StartRound() {
 			} else if (i == detective) {
 				pPlayer->m_iPlayerRole = 2;
 				pPlayer->GiveNamedItem("weapon_357");
-			pPlayer->GiveAmmo(6, "357", _357_MAX_CARRY);
+				if (CountPlayers() > 6) {
+					pPlayer->GiveAmmo(CountPlayers()-6, "357", _357_MAX_CARRY);
+				}
 			} else {
 				pPlayer->m_iPlayerRole = 0;
 			}
@@ -443,10 +473,6 @@ bool CHalfLifeMultiplay::FPlayerCanTakeDamage(CBasePlayer* pPlayer, CBaseEntity*
 //=========================================================
 void CHalfLifeMultiplay::PlayerThink(CBasePlayer* pPlayer)
 {
-	if(!m_iInGame) {
-		if ((pPlayer->m_afButtonPressed & (IN_DUCK | IN_ATTACK | IN_ATTACK2 | IN_USE | IN_JUMP)) != 0)
-			StartRound();
-	}
 
 	if (g_fGameOver)
 	{
