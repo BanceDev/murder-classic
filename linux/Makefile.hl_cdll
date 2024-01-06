@@ -42,6 +42,7 @@ HL1_OBJS = \
 	$(HL1_OBJ_DIR)/com_weapons.o \
 	$(HL1_OBJ_DIR)/death.o \
 	$(HL1_OBJ_DIR)/role.o \
+	$(HL1_OBJ_DIR)/flashbang.o \
 	$(HL1_OBJ_DIR)/clue.o \
 	$(HL1_OBJ_DIR)/demo.o \
 	$(HL1_OBJ_DIR)/entity.o \

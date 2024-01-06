@@ -374,6 +374,15 @@ bool CBasePlayer::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, fl
 
 
 	CBaseEntity* pAttacker = CBaseEntity::Instance(pevAttacker);
+	CBasePlayer* pAttackPlayer = (CBasePlayer*)pAttacker;
+
+	if (pAttackPlayer && pAttackPlayer->IsPlayer()) {
+		if ((m_iPlayerRole == 0) && (pAttackPlayer->m_iPlayerRole == 2 || pAttackPlayer->m_iPlayerRole == 0)) {
+			MESSAGE_BEGIN(MSG_ONE, gmsgFlashbang, NULL, pAttackPlayer->pev);
+			WRITE_BYTE(1);
+			MESSAGE_END();
+		}
+	}
 
 	if (!g_pGameRules->FPlayerCanTakeDamage(this, pAttacker))
 	{

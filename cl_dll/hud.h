@@ -307,6 +307,22 @@ private:
 	float m_fFade;
 };
 
+// Flashbang Message
+//-----------------------------------------------------
+//
+class CHudFlashbang : public CHudBase
+{
+public:
+	bool Init() override;
+	bool VidInit() override;
+	bool Draw(float flTime) override;
+	bool MsgFunc_Flashbang(const char* pszName, int iSize, void* pbuf);
+
+private:
+	bool m_iIsFlashed;
+	float m_fFade;
+};
+
 //
 //-----------------------------------------------------
 //
@@ -595,6 +611,7 @@ public:
 	CHudBattery m_Battery;
 	CHudClue m_Clue;
 	CHudRole m_Role;
+	CHudFlashbang m_Flashbang;
 	CHudTrain m_Train;
 	CHudFlashlight m_Flash;
 	CHudMessage m_Message;

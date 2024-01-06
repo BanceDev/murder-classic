@@ -27,6 +27,7 @@ inline int gmsgHealth = 0;
 inline int gmsgDamage = 0;
 inline int gmsgBattery = 0;
 inline int gmsgRole = 0;
+inline int gmsgFlashbang = 0;
 inline int gmsgClue = 0;
 inline int gmsgTrain = 0;
 inline int gmsgLogo = 0;
