@@ -1282,7 +1282,7 @@ void CBasePlayer::StartObserver(Vector vecPosition, Vector vecViewAngle)
 
 	// Find a player to watch
 	m_flNextObserverInput = 0;
-	Observer_SetMode(m_iObserverLastMode);
+	Observer_SetMode(OBS_IN_EYE);
 }
 
 void CBasePlayer::StopObserver()

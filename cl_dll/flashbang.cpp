@@ -80,8 +80,8 @@ bool CHudFlashbang::Draw(float flTime)
             a = 0;
             m_fFade = 0;
         }
-        if (m_fFade > 10) {
-            a = (m_fFade / 10) * 255;
+        if (m_fFade > 30) {
+            a = (m_fFade / 30) * 255;
         } else {
             a = 255;
         }
