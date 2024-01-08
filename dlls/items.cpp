@@ -110,7 +110,12 @@ void CItem::ItemTouch(CBaseEntity* pOther)
 		return;
 	}
 
+
 	CBasePlayer* pPlayer = (CBasePlayer*)pOther;
+
+	if (pPlayer->m_iPlayerRole == 1) {
+		return;
+	}
 
 	// ok, a player is touching this item, but can he have it?
 	if (!g_pGameRules->CanHaveItem(pPlayer, this))

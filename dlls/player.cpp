@@ -1287,12 +1287,16 @@ void CBasePlayer::StartObserver(Vector vecPosition, Vector vecViewAngle)
 
 void CBasePlayer::StopObserver()
 {
-   // Turn off spectator
-   if ( pev->iuser1 || pev->iuser2 )
-   {
-      pev->iuser1 = pev->iuser2 = 0; 
-      m_hObserverTarget = NULL;
-   }
+   	// Turn off spectator
+	if ( pev->iuser1 || pev->iuser2 )
+	{
+
+		pev->iuser1 = pev->iuser2 = 0; 
+		m_hObserverTarget = NULL;
+	}
+
+	m_fWeapon = false; // force weapon send
+	m_iHideHUD = 0;
 }
 
 //

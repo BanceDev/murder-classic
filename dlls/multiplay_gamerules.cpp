@@ -221,6 +221,7 @@ void CHalfLifeMultiplay::Think()
 						for (int i = 1; i <= CountPlayers(); i++) {
 							CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
 							if (pPlayer && pPlayer->IsPlayer()) {
+								pPlayer->m_iPlayerRole = 0;
 								pPlayer->Spawn();
 							}
 						}
@@ -236,7 +237,7 @@ void CHalfLifeMultiplay::Think()
 	//	Murder Game Logic
 	if (CountPlayers() >= 3 && !m_iInGame) {
 		// start a round
-		StartRound();
+		GoToIntermission(BYSTANDER_WIN);
 	} else if (!m_iInGame) {
 		for (int i = 1; i <= CountPlayers(); i++) {
 			CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
@@ -286,20 +287,14 @@ void CHalfLifeMultiplay::StartRound() {
 		CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
 		if (pPlayer && pPlayer->IsPlayer()) {
 			pPlayer->StopObserver();
-			pPlayer->Spawn();
-			pPlayer->GiveNamedItem("weapon_9mmhandgun");
 			if (i == murderer) {
 				pPlayer->m_iPlayerRole = 1;
-				pPlayer->GiveNamedItem("weapon_crowbar");
 			} else if (i == detective) {
 				pPlayer->m_iPlayerRole = 2;
-				pPlayer->GiveNamedItem("weapon_357");
-				if (CountPlayers() > 6) {
-					pPlayer->GiveAmmo(CountPlayers()-6, "357", _357_MAX_CARRY);
-				}
 			} else {
 				pPlayer->m_iPlayerRole = 0;
 			}
+			pPlayer->Spawn();
 			MESSAGE_BEGIN(MSG_ONE, gmsgRole, NULL, pPlayer->pev);
 			WRITE_BYTE(pPlayer->m_iPlayerRole);
 			MESSAGE_END();
@@ -328,7 +323,7 @@ bool CHalfLifeMultiplay::IsDeathmatch()
 //=========================================================
 bool CHalfLifeMultiplay::IsCoOp()
 {
-	return 0 != gpGlobals->coop;
+	return false;
 }
 
 //=========================================================
@@ -509,7 +504,7 @@ void CHalfLifeMultiplay::PlayerSpawn(CBasePlayer* pPlayer)
 
 	//Ensure the player switches to the Glock on spawn regardless of setting
 	const int originalAutoWepSwitch = pPlayer->m_iAutoWepSwitch;
-	pPlayer->m_iAutoWepSwitch = 1;
+	pPlayer->m_iAutoWepSwitch = 0;
 
 	pPlayer->SetHasSuit(true);
 
@@ -519,6 +514,19 @@ void CHalfLifeMultiplay::PlayerSpawn(CBasePlayer* pPlayer)
 	{
 		pWeaponEntity->Touch(pPlayer);
 		addDefault = false;
+	}
+
+	if (addDefault)
+	{
+		pPlayer->GiveNamedItem("weapon_9mmhandgun");
+		if (pPlayer->m_iPlayerRole == 1) {
+			pPlayer->GiveNamedItem("weapon_crowbar");
+		} else if (pPlayer->m_iPlayerRole == 2) {
+			pPlayer->GiveNamedItem("weapon_357");
+			if (CountPlayers() > 6) {
+				pPlayer->GiveAmmo(CountPlayers()-6, "357", _357_MAX_CARRY);
+			}
+		}
 	}
 
 	pPlayer->m_iAutoWepSwitch = originalAutoWepSwitch;
@@ -540,7 +548,7 @@ float CHalfLifeMultiplay::FlPlayerSpawnTime(CBasePlayer* pPlayer)
 
 bool CHalfLifeMultiplay::AllowAutoTargetCrosshair()
 {
-	return (aimcrosshair.value != 0);
+	return false;
 }
 
 //=========================================================
@@ -558,6 +566,13 @@ int CHalfLifeMultiplay::IPointsForKill(CBasePlayer* pAttacker, CBasePlayer* pKil
 //=========================================================
 void CHalfLifeMultiplay::PlayerKilled(CBasePlayer* pVictim, entvars_t* pKiller, entvars_t* pInflictor)
 {
+	if (pVictim->m_iPlayerRole == 2) {
+		Vector vecGunPos;
+		Vector vecGunAngles;
+
+		pVictim->GetAttachment(0, vecGunPos, vecGunAngles);
+		pVictim->DropItem("weapon_357", vecGunPos, vecGunAngles);
+	}
 	FireTargets("game_playerdie", pVictim, pVictim, USE_TOGGLE, 0);
 
 	edict_t* pentSpawnSpot = g_pGameRules->GetPlayerSpawnSpot(pVictim);
@@ -886,7 +901,7 @@ void CHalfLifeMultiplay::PlayerGotItem(CBasePlayer* pPlayer, CItem* pItem)
 //=========================================================
 int CHalfLifeMultiplay::ItemShouldRespawn(CItem* pItem)
 {
-	return false;
+	return true;
 }
 
 
@@ -895,7 +910,7 @@ int CHalfLifeMultiplay::ItemShouldRespawn(CItem* pItem)
 //=========================================================
 float CHalfLifeMultiplay::FlItemRespawnTime(CItem* pItem)
 {
-	return gpGlobals->time + ITEM_RESPAWN_TIME;
+	return gpGlobals->time + 60;
 }
 
 //=========================================================
@@ -1033,7 +1048,7 @@ void CHalfLifeMultiplay::GoToIntermission(int iWinner)
 		if (pPlayer && pPlayer->IsPlayer()) {
 			// kill any remaining players to cycle weapons
 			if (pPlayer->IsAlive()) {
-				FireTargets("game_playerdie", pPlayer, pPlayer, USE_TOGGLE, 0);
+				pPlayer->Killed(pPlayer->pev, 0);
 			}
 			MESSAGE_BEGIN(MSG_ONE, gmsgRole, NULL, pPlayer->pev);
 			WRITE_BYTE(iWinner);
