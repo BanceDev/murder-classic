@@ -374,13 +374,6 @@ bool CHalfLifeMultiplay::ClientConnected(edict_t* pEntity, const char* pszName, 
 {
 	g_VoiceGameMgr.ClientConnected(pEntity);
 	// if player joins mid round make them spectate
-	CBasePlayer* pPlayer = (CBasePlayer*)CBaseEntity::Instance(pEntity);
-	if (m_iInGame) {
-		if (pPlayer && pPlayer->IsPlayer()) {
-			edict_t* pentSpawnSpot = g_pGameRules->GetPlayerSpawnSpot(pPlayer);
-			pPlayer->StartObserver(pPlayer->pev->origin, VARS(pentSpawnSpot)->angles);
-		}
-	}
 	return true;
 }
 
@@ -499,6 +492,13 @@ void CHalfLifeMultiplay::PlayerThink(CBasePlayer* pPlayer)
 //=========================================================
 void CHalfLifeMultiplay::PlayerSpawn(CBasePlayer* pPlayer)
 {
+	// dont spawn if in game
+	if (m_iInGame) {
+		edict_t* pentSpawnSpot = g_pGameRules->GetPlayerSpawnSpot(pPlayer);
+		pPlayer->StartObserver(pPlayer->pev->origin, VARS(pentSpawnSpot)->angles);
+		return;
+	}
+
 	bool addDefault;
 	CBaseEntity* pWeaponEntity = NULL;
 
@@ -901,7 +901,12 @@ void CHalfLifeMultiplay::PlayerGotItem(CBasePlayer* pPlayer, CItem* pItem)
 //=========================================================
 int CHalfLifeMultiplay::ItemShouldRespawn(CItem* pItem)
 {
-	return true;
+	if ((pItem->pev->spawnflags & SF_NORESPAWN) != 0)
+	{
+		return GR_ITEM_RESPAWN_NO;
+	}
+
+	return GR_ITEM_RESPAWN_YES;
 }
 
 
@@ -910,7 +915,7 @@ int CHalfLifeMultiplay::ItemShouldRespawn(CItem* pItem)
 //=========================================================
 float CHalfLifeMultiplay::FlItemRespawnTime(CItem* pItem)
 {
-	return gpGlobals->time + 60;
+	return gpGlobals->time + 30;
 }
 
 //=========================================================

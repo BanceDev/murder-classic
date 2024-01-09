@@ -54,7 +54,7 @@ bool CHudFlashbang::MsgFunc_Flashbang(const char* pszName, int iSize, void* pbuf
         m_iIsFlashed = true;
     }
 
-    m_fFade = 100;
+    m_fFade = 70;
 	
 
 	return true;
@@ -71,8 +71,8 @@ bool CHudFlashbang::Draw(float flTime)
 
     if (0 != m_fFade)
     {
-        if (m_fFade > 100)
-            m_fFade = 100;
+        if (m_fFade > 70)
+            m_fFade = 70;
 
         m_fFade -= (gHUD.m_flTimeDelta * 20);
         if (m_fFade <= 0)
@@ -80,8 +80,8 @@ bool CHudFlashbang::Draw(float flTime)
             a = 0;
             m_fFade = 0;
         }
-        if (m_fFade > 30) {
-            a = (m_fFade / 30) * 255;
+        if (m_fFade > 40) {
+            a = (m_fFade / 40) * 255;
         } else {
             a = 255;
         }
