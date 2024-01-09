@@ -566,13 +566,13 @@ int CHalfLifeMultiplay::IPointsForKill(CBasePlayer* pAttacker, CBasePlayer* pKil
 //=========================================================
 void CHalfLifeMultiplay::PlayerKilled(CBasePlayer* pVictim, entvars_t* pKiller, entvars_t* pInflictor)
 {
-	if (pVictim->m_iPlayerRole == 2) {
+	/*if (pVictim->m_iPlayerRole == 2) {
 		Vector vecGunPos;
 		Vector vecGunAngles;
 
 		pVictim->GetAttachment(0, vecGunPos, vecGunAngles);
 		pVictim->DropItem("weapon_357", vecGunPos, vecGunAngles);
-	}
+	}*/
 	FireTargets("game_playerdie", pVictim, pVictim, USE_TOGGLE, 0);
 
 	edict_t* pentSpawnSpot = g_pGameRules->GetPlayerSpawnSpot(pVictim);
