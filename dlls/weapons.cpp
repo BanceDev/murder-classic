@@ -539,10 +539,6 @@ void CBasePlayerItem::DefaultTouch(CBaseEntity* pOther)
 
 	CBasePlayer* pPlayer = (CBasePlayer*)pOther;
 
-	if (pPlayer->m_iPlayerRole == 1) {
-		return;
-	}
-
 	// can I have this?
 	if (!g_pGameRules->CanHavePlayerItem(pPlayer, this))
 	{
