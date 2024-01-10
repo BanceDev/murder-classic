@@ -431,6 +431,11 @@ void CHalfLifeMultiplay::ClientDisconnected(edict_t* pClient)
 
 		if (pPlayer)
 		{
+			// bystanders win if murderer disconnects
+			if (pPlayer->m_iPlayerRole == 1) {
+				GoToIntermission(BYSTANDER_WIN);
+			}
+
 			FireTargets("game_playerleave", pPlayer, pPlayer, USE_TOGGLE, 0);
 
 			// team match?
@@ -452,6 +457,14 @@ void CHalfLifeMultiplay::ClientDisconnected(edict_t* pClient)
 			}
 
 			pPlayer->RemoveAllItems(true); // destroy all of the players weapons and items
+
+			// update the index of the murderer if the disconnect changes it
+			for (int i = 1; i <= CountPlayers(); i++) {
+				CBasePlayer* pConnected = (CBasePlayer*)(UTIL_PlayerByIndex(i));
+				if (pConnected->m_iPlayerRole == 1) {
+					m_iMurderer = i;
+				}
+			}
 		}
 	}
 }
