@@ -163,7 +163,7 @@ void CItem::Materialize()
 	if ((pev->effects & EF_NODRAW) != 0)
 	{
 		// changing from invisible state to visible.
-		EMIT_SOUND_DYN(ENT(pev), CHAN_WEAPON, "items/suitchargeok1.wav", 1, ATTN_NORM, 0, 150);
+		//EMIT_SOUND_DYN(ENT(pev), CHAN_WEAPON, "items/suitchargeok1.wav", 1, ATTN_NORM, 0, 150);
 		pev->effects &= ~EF_NODRAW;
 		pev->effects |= EF_MUZZLEFLASH;
 	}
@@ -371,7 +371,6 @@ class CItemClue : public CItem
 		MESSAGE_BEGIN(MSG_ONE, gmsgClue, NULL, pPlayer->pev);
 		WRITE_BYTE(pPlayer->m_iClues);
 		MESSAGE_END();
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "buttons/blip1.wav", 50, ATTN_NORM);
 		if (pPlayer->m_iClues >= 5) {
 			pPlayer->GiveNamedItem("weapon_357");
 		}

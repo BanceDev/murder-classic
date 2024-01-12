@@ -108,9 +108,9 @@ int CountPlayers()
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
-		CBaseEntity* pEnt = UTIL_PlayerByIndex(i);
+		CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
 
-		if (pEnt)
+		if (pPlayer && pPlayer->IsPlayer())
 		{
 			num = num + 1;
 		}
@@ -217,16 +217,10 @@ void CHalfLifeMultiplay::Think()
 					m_iInGame = false;
 					// if a player disconnected and made the game unplayable dont start a new game
 					// just respawn dead players and enter warmup state
-					if (CountPlayers() < 3) {
-						for (int i = 1; i <= CountPlayers(); i++) {
-							CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
-							if (pPlayer && pPlayer->IsPlayer()) {
-								pPlayer->m_iPlayerRole = 0;
-								pPlayer->Spawn();
-							}
-						}
-					} else {
+					if (CountPlayers() >= 3) {
 						StartRound();
+					} else {
+						ChangeLevel();
 					}
 				}
 		}
@@ -263,11 +257,11 @@ void CHalfLifeMultiplay::Think()
 	int count = 0;
 	for (int i = 1; i <= CountPlayers(); i++) {
 		CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
-		if (pPlayer->IsAlive()) {
+		if (pPlayer && pPlayer->IsAlive()) {
 			count++;
 		}
 	}
-	if (count == 1 && m_iInGame) {
+	if (count <= 1 && m_iInGame) {
 		GoToIntermission(MURDERER_WIN);
 	}
 
@@ -373,7 +367,6 @@ bool CHalfLifeMultiplay::FShouldSwitchWeapon(CBasePlayer* pPlayer, CBasePlayerIt
 bool CHalfLifeMultiplay::ClientConnected(edict_t* pEntity, const char* pszName, const char* pszAddress, char szRejectReason[128])
 {
 	g_VoiceGameMgr.ClientConnected(pEntity);
-	// if player joins mid round make them spectate
 	return true;
 }
 
@@ -431,10 +424,6 @@ void CHalfLifeMultiplay::ClientDisconnected(edict_t* pClient)
 
 		if (pPlayer)
 		{
-			// bystanders win if murderer disconnects
-			if (pPlayer->m_iPlayerRole == 1) {
-				GoToIntermission(BYSTANDER_WIN);
-			}
 
 			FireTargets("game_playerleave", pPlayer, pPlayer, USE_TOGGLE, 0);
 
@@ -457,16 +446,9 @@ void CHalfLifeMultiplay::ClientDisconnected(edict_t* pClient)
 			}
 
 			pPlayer->RemoveAllItems(true); // destroy all of the players weapons and items
-
-			// update the index of the murderer if the disconnect changes it
-			for (int i = 1; i <= CountPlayers(); i++) {
-				CBasePlayer* pConnected = (CBasePlayer*)(UTIL_PlayerByIndex(i));
-				if (pConnected->m_iPlayerRole == 1) {
-					m_iMurderer = i;
-				}
-			}
 		}
 	}
+	GoToIntermission(BYSTANDER_WIN);
 }
 
 //=========================================================
@@ -487,6 +469,10 @@ bool CHalfLifeMultiplay::FPlayerCanTakeDamage(CBasePlayer* pPlayer, CBaseEntity*
 //=========================================================
 void CHalfLifeMultiplay::PlayerThink(CBasePlayer* pPlayer)
 {
+	// become spectator after joining if in game
+	if (m_iInGame && pPlayer->m_iPlayerRole < 0 && pPlayer->IsAlive()) {
+		pPlayer->Killed(pPlayer->pev, 0);
+	}
 
 	if (g_fGameOver)
 	{
@@ -505,12 +491,6 @@ void CHalfLifeMultiplay::PlayerThink(CBasePlayer* pPlayer)
 //=========================================================
 void CHalfLifeMultiplay::PlayerSpawn(CBasePlayer* pPlayer)
 {
-	// dont spawn if in game
-	if (m_iInGame) {
-		edict_t* pentSpawnSpot = g_pGameRules->GetPlayerSpawnSpot(pPlayer);
-		pPlayer->StartObserver(pPlayer->pev->origin, VARS(pentSpawnSpot)->angles);
-		return;
-	}
 
 	bool addDefault;
 	CBaseEntity* pWeaponEntity = NULL;
@@ -928,7 +908,7 @@ int CHalfLifeMultiplay::ItemShouldRespawn(CItem* pItem)
 //=========================================================
 float CHalfLifeMultiplay::FlItemRespawnTime(CItem* pItem)
 {
-	return gpGlobals->time + 30;
+	return gpGlobals->time + 45;
 }
 
 //=========================================================
