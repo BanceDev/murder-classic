@@ -110,7 +110,7 @@ int CountPlayers()
 	{
 		CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
 
-		if (pPlayer && pPlayer->IsPlayer())
+		if (pPlayer)
 		{
 			num = num + 1;
 		}
@@ -215,8 +215,9 @@ void CHalfLifeMultiplay::Think()
 				|| ((m_flIntermissionStartTime + MAX_INTERMISSION_TIME) < gpGlobals->time)) {
 					g_fGameOver = false;
 					m_iInGame = false;
+					ALERT(at_console, "%d", CountPlayers());
 					// if a player disconnected and made the game unplayable dont start a new game
-					// just respawn dead players and enter warmup state
+					// just reset the map and enter waiting state
 					if (CountPlayers() >= 3) {
 						StartRound();
 					} else {

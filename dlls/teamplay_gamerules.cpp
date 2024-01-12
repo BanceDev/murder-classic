@@ -92,7 +92,7 @@ void CHalfLifeTeamplay::Think()
 
 	if (flTimeLimit != 0 && gpGlobals->time >= flTimeLimit)
 	{
-		GoToIntermission(3, 0);
+		GoToIntermission(3);
 		return;
 	}
 
@@ -107,7 +107,7 @@ void CHalfLifeTeamplay::Think()
 		{
 			if (team_scores[i] >= flFragLimit)
 			{
-				GoToIntermission(3, 0);
+				GoToIntermission(3);
 				return;
 			}
 
