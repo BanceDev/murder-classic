@@ -265,7 +265,6 @@ void CHalfLifeMultiplay::Think()
 	if (count <= 1 && m_iInGame) {
 		GoToIntermission(MURDERER_WIN);
 	}
-
 	
 }
 
@@ -368,7 +367,6 @@ bool CHalfLifeMultiplay::FShouldSwitchWeapon(CBasePlayer* pPlayer, CBasePlayerIt
 bool CHalfLifeMultiplay::ClientConnected(edict_t* pEntity, const char* pszName, const char* pszAddress, char szRejectReason[128])
 {
 	g_VoiceGameMgr.ClientConnected(pEntity);
-	m_iClients += 1;
 	return true;
 }
 
@@ -381,6 +379,7 @@ void CHalfLifeMultiplay::UpdateGameMode(CBasePlayer* pPlayer)
 
 void CHalfLifeMultiplay::InitHUD(CBasePlayer* pl)
 {
+	m_iClients++;
 	// notify other clients of player joining the game
 	UTIL_ClientPrintAll(HUD_PRINTNOTIFY, UTIL_VarArgs("%s has joined the game\n",
 											 (!FStringNull(pl->pev->netname) && STRING(pl->pev->netname)[0] != 0) ? STRING(pl->pev->netname) : "unconnected"));
