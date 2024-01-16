@@ -9,7 +9,7 @@
 *   Use, distribution, and modification of this source code and/or resulting
 *   object code is restricted to non-commercial enhancements to products from
 *   Valve LLC.  All other use, distribution, or modification is prohibited
-*   without written permission from Valve LLC.
+*   without written permission from Valve LLC. 
 *
 ****/
 //
@@ -102,6 +102,7 @@ CountPlayers
 Determine the current # of active players on the server for map cycling logic
 ==============
 */
+// this function is hella defunct idk why but dont bother with it
 int CountPlayers()
 {
 	int num = 0;
@@ -215,10 +216,9 @@ void CHalfLifeMultiplay::Think()
 				|| ((m_flIntermissionStartTime + MAX_INTERMISSION_TIME) < gpGlobals->time)) {
 					g_fGameOver = false;
 					m_iInGame = false;
-					ALERT(at_console, "%d", CountPlayers());
 					// if a player disconnected and made the game unplayable dont start a new game
 					// just reset the map and enter waiting state
-					if (CountPlayers() >= 3) {
+					if (m_iClients >= 3) {
 						StartRound();
 					} else {
 						ChangeLevel();
@@ -230,11 +230,11 @@ void CHalfLifeMultiplay::Think()
 	}
 
 	//	Murder Game Logic
-	if (CountPlayers() >= 3 && !m_iInGame) {
+	if (m_iClients >= 3 && !m_iInGame) {
 		// start a round
 		GoToIntermission(BYSTANDER_WIN);
 	} else if (!m_iInGame) {
-		for (int i = 1; i <= CountPlayers(); i++) {
+		for (int i = 1; i <= m_iClients; i++) {
 			CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
 			MESSAGE_BEGIN(MSG_ONE, gmsgRole, NULL, pPlayer->pev);
 			WRITE_BYTE(5);
@@ -256,7 +256,7 @@ void CHalfLifeMultiplay::Think()
 
 	// murderer win
 	int count = 0;
-	for (int i = 1; i <= CountPlayers(); i++) {
+	for (int i = 1; i <= m_iClients; i++) {
 		CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
 		if (pPlayer && pPlayer->IsAlive()) {
 			count++;
@@ -273,12 +273,12 @@ void CHalfLifeMultiplay::Think()
 void CHalfLifeMultiplay::StartRound() {
 	// setup roles
 	m_iInGame = false;
-	int murderer = g_engfuncs.pfnRandomLong(1, CountPlayers());
-	int detective = g_engfuncs.pfnRandomLong(1, CountPlayers());
+	int murderer = g_engfuncs.pfnRandomLong(1, m_iClients);
+	int detective = g_engfuncs.pfnRandomLong(1, m_iClients);
 	while (detective == murderer) {
-		detective = g_engfuncs.pfnRandomLong(1, CountPlayers());
+		detective = g_engfuncs.pfnRandomLong(1, m_iClients);
 	}
-	for (int i = 1; i <= CountPlayers(); i++) {
+	for (int i = 1; i <= m_iClients; i++) {
 		CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
 		if (pPlayer && pPlayer->IsPlayer()) {
 			pPlayer->StopObserver();
@@ -368,6 +368,7 @@ bool CHalfLifeMultiplay::FShouldSwitchWeapon(CBasePlayer* pPlayer, CBasePlayerIt
 bool CHalfLifeMultiplay::ClientConnected(edict_t* pEntity, const char* pszName, const char* pszAddress, char szRejectReason[128])
 {
 	g_VoiceGameMgr.ClientConnected(pEntity);
+	m_iClients += 1;
 	return true;
 }
 
@@ -425,7 +426,7 @@ void CHalfLifeMultiplay::ClientDisconnected(edict_t* pClient)
 
 		if (pPlayer)
 		{
-
+			m_iClients -= 1;
 			FireTargets("game_playerleave", pPlayer, pPlayer, USE_TOGGLE, 0);
 
 			// team match?
@@ -517,8 +518,8 @@ void CHalfLifeMultiplay::PlayerSpawn(CBasePlayer* pPlayer)
 			pPlayer->GiveNamedItem("weapon_crowbar");
 		} else if (pPlayer->m_iPlayerRole == 2) {
 			pPlayer->GiveNamedItem("weapon_357");
-			if (CountPlayers() > 6) {
-				pPlayer->GiveAmmo(CountPlayers()-6, "357", _357_MAX_CARRY);
+			if (m_iClients > 6) {
+				pPlayer->GiveAmmo(m_iClients-6, "357", _357_MAX_CARRY);
 			}
 		}
 	}
@@ -1042,7 +1043,7 @@ void CHalfLifeMultiplay::GoToIntermission(int iWinner)
 	if (g_fGameOver)
 		return;
 	// handle endgame
-	for (int i = 1; i <= CountPlayers(); i++) {
+	for (int i = 1; i <= m_iClients; i++) {
 		CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
 		if (pPlayer && pPlayer->IsPlayer()) {
 			// kill any remaining players to cycle weapons
@@ -1422,7 +1423,7 @@ void CHalfLifeMultiplay::ChangeLevel()
 	szCommands[0] = '\0';
 	szRules[0] = '\0';
 
-	curplayers = CountPlayers();
+	curplayers = m_iClients;
 
 	// Has the map cycle filename changed?
 	if (stricmp(mapcfile, szPreviousMapCycleFile))
