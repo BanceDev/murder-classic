@@ -418,14 +418,14 @@ void CHalfLifeMultiplay::InitHUD(CBasePlayer* pl)
 //=========================================================
 void CHalfLifeMultiplay::ClientDisconnected(edict_t* pClient)
 {
-
+	m_iClients--;
 	if (pClient)
 	{
 		CBasePlayer* pPlayer = (CBasePlayer*)CBaseEntity::Instance(pClient);
 
 		if (pPlayer)
 		{
-			m_iClients -= 1;
+			
 			FireTargets("game_playerleave", pPlayer, pPlayer, USE_TOGGLE, 0);
 
 			// team match?
