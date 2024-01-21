@@ -486,6 +486,10 @@ void CHalfLifeMultiplay::PlayerThink(CBasePlayer* pPlayer)
 		pPlayer->pev->button = 0;
 		pPlayer->m_afButtonReleased = 0;
 	}
+
+	if (gmanmode.value) {
+		g_engfuncs.pfnSetClientKeyValue(pPlayer->entindex(), g_engfuncs.pfnGetInfoKeyBuffer(pPlayer->edict()), "model", "gman");
+	}
 }
 
 //=========================================================
