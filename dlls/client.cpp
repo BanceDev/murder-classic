@@ -99,8 +99,6 @@ GLOBALS ASSUMED SET:  g_fGameOver
 */
 void ClientDisconnect(edict_t* pEntity)
 {
-	if (g_fGameOver)
-		return;
 
 	char text[256] = "";
 	if (!FStringNull(pEntity->v.netname))
