@@ -722,7 +722,7 @@ void CBasePlayer::Killed(entvars_t* pevAttacker, int iGib)
 		return;
 	}
 
-	DeathSound();
+	//DeathSound();
 
 	pev->angles.x = 0;
 	pev->angles.z = 0;

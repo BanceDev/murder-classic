@@ -572,9 +572,12 @@ void CHalfLifeMultiplay::PlayerKilled(CBasePlayer* pVictim, entvars_t* pKiller, 
 		pVictim->DropItem("weapon_357", vecGunPos, vecGunAngles);
 	}*/
 	FireTargets("game_playerdie", pVictim, pVictim, USE_TOGGLE, 0);
-
-	edict_t* pentSpawnSpot = g_pGameRules->GetPlayerSpawnSpot(pVictim);
-	pVictim->StartObserver(pVictim->pev->origin, VARS(pentSpawnSpot)->angles);
+	CBasePlayer* pKillerPlayer = (CBasePlayer*)CBaseEntity::Instance(pKiller);
+	if (pKillerPlayer->IsPlayer()) {
+		edict_t* pentSpawnSpot = g_pGameRules->GetPlayerSpawnSpot(pVictim);
+		pVictim->StartObserver(pVictim->pev->origin, VARS(pentSpawnSpot)->angles);
+	}
+	
 }
 
 //=========================================================
