@@ -218,11 +218,7 @@ void CHalfLifeMultiplay::Think()
 					m_iInGame = false;
 					// if a player disconnected and made the game unplayable dont start a new game
 					// just reset the map and enter waiting state
-					if (m_iClients >= 3) {
-						StartRound();
-					} else {
-						ChangeLevel();
-					}
+					StartRound();
 				}
 		}
 
@@ -278,24 +274,37 @@ void CHalfLifeMultiplay::StartRound() {
 		detective = g_engfuncs.pfnRandomLong(1, m_iClients);
 	}
 	for (int i = 1; i <= m_iClients; i++) {
-		CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
-		if (pPlayer && pPlayer->IsPlayer()) {
-			pPlayer->StopObserver();
-			if (i == murderer) {
-				pPlayer->m_iPlayerRole = 1;
-			} else if (i == detective) {
-				pPlayer->m_iPlayerRole = 2;
-			} else {
-				pPlayer->m_iPlayerRole = 0;
+		if (m_iClients < 3) {
+			CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
+			if (pPlayer && pPlayer->IsPlayer()) {
+				pPlayer->StopObserver();
+				pPlayer->m_iPlayerRole = -1;
+				pPlayer->Spawn();
+				MESSAGE_BEGIN(MSG_ONE, gmsgRole, NULL, pPlayer->pev);
+				WRITE_BYTE(5);
+				MESSAGE_END();
 			}
-			pPlayer->Spawn();
-			MESSAGE_BEGIN(MSG_ONE, gmsgRole, NULL, pPlayer->pev);
-			WRITE_BYTE(pPlayer->m_iPlayerRole);
-			MESSAGE_END();
+		} else {
+			CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
+			if (pPlayer && pPlayer->IsPlayer()) {
+				pPlayer->StopObserver();
+				if (i == murderer) {
+					pPlayer->m_iPlayerRole = 1;
+				} else if (i == detective) {
+					pPlayer->m_iPlayerRole = 2;
+				} else {
+					pPlayer->m_iPlayerRole = 0;
+				}
+				pPlayer->Spawn();
+				MESSAGE_BEGIN(MSG_ONE, gmsgRole, NULL, pPlayer->pev);
+				WRITE_BYTE(pPlayer->m_iPlayerRole);
+				MESSAGE_END();
+				m_iInGame = true;
+			}
 		}
 	}
 	m_iMurderer = murderer;
-	m_iInGame = true;
+	
 }
 
 
@@ -1409,7 +1418,6 @@ Server is changing to a new level, check mapcycle.txt for map name and setup inf
 */
 void CHalfLifeMultiplay::ChangeLevel()
 {
-	// setup roles
 	m_iInGame = false;
 	for (int i = 1; i <= m_iClients; i++) {
 		CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
