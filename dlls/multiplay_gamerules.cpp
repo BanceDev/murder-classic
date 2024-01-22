@@ -1429,7 +1429,7 @@ void CHalfLifeMultiplay::ChangeLevel()
 	szCommands[0] = '\0';
 	szRules[0] = '\0';
 
-	curplayers = m_iClients;
+	curplayers = CountPlayers();
 
 	// Has the map cycle filename changed?
 	if (stricmp(mapcfile, szPreviousMapCycleFile))
