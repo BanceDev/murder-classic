@@ -481,7 +481,7 @@ void CHalfLifeMultiplay::PlayerThink(CBasePlayer* pPlayer)
 {
 	// become spectator after joining if in game
 	if (m_iInGame && pPlayer->m_iPlayerRole < 0 && pPlayer->IsAlive()) {
-		pPlayer->Killed(pPlayer->pev, 0);
+		pPlayer->TakeDamage(CWorld::World->pev, CWorld::World->pev, 900, DMG_GENERIC);
 	}
 
 	if (g_fGameOver)
@@ -1063,7 +1063,7 @@ void CHalfLifeMultiplay::GoToIntermission(int iWinner)
 		if (pPlayer && pPlayer->IsPlayer()) {
 			// kill any remaining players to cycle weapons
 			if (pPlayer->IsAlive()) {
-				pPlayer->Killed(pPlayer->pev, 0);
+				pPlayer->TakeDamage(CWorld::World->pev, CWorld::World->pev, 900, DMG_GENERIC);
 			}
 			MESSAGE_BEGIN(MSG_ONE, gmsgRole, NULL, pPlayer->pev);
 			WRITE_BYTE(iWinner);
