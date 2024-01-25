@@ -564,6 +564,12 @@ void ClientCommand(edict_t* pEntity)
 	{
 		ClientPrint(pev, HUD_PRINTCONSOLE, "Manual spectating is disabled.\n");
 	}
+	else if (FStrEq(pcmd, "start")) {
+		CHalfLifeMultiplay* g_pMurderRules = (CHalfLifeMultiplay*)g_pGameRules;
+		if (g_pMurderRules) {
+			g_pMurderRules->StartRound();
+		}
+	}
 	else if (FStrEq(pcmd, "specmode")) // new spectator mode
 	{
 		if (player->IsObserver())
