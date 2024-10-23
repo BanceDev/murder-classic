@@ -3519,21 +3519,6 @@ void CBasePlayer::CheatImpulseCommands(int iImpulse)
 				pEntity->SetThink(&CBaseEntity::SUB_Remove);
 		}
 		break;
-	
-	case 204:
-		m_iPlayerRole = 1;
-		RemoveAllItems(false);
-		GiveNamedItem("weapon_9mmhandgun");
-		GiveNamedItem("weapon_crowbar");
-		break;
-	
-	case 205:
-		m_iPlayerRole = 2;
-		RemoveAllItems(false);
-		GiveNamedItem("weapon_9mmhandgun");
-		GiveNamedItem("weapon_357");
-		break;
-
 	}
 }
 

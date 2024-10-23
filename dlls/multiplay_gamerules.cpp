@@ -268,16 +268,11 @@ void CHalfLifeMultiplay::Think()
 void CHalfLifeMultiplay::StartRound() {
 	// setup roles
 	m_iInGame = false;
-	int murderer = 0;
-	int detective = 0;
-	if(m_iClients > 3) {
-		murderer = g_engfuncs.pfnRandomLong(1, m_iClients);
+	int murderer = g_engfuncs.pfnRandomLong(1, m_iClients);
+	int detective = g_engfuncs.pfnRandomLong(1, m_iClients);
+	while (detective == murderer) {
 		detective = g_engfuncs.pfnRandomLong(1, m_iClients);
-		while (detective == murderer) {
-			detective = g_engfuncs.pfnRandomLong(1, m_iClients);
-		}
 	}
-	
 	for (int i = 1; i <= m_iClients; i++) {
 		if (m_iClients < 3) {
 			CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
