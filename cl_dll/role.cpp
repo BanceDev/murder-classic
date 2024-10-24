@@ -71,9 +71,9 @@ bool CHudRole::MsgFunc_Role(const char* pszName, int iSize, void* pbuf)
 
 bool CHudRole::Draw(float flTime)
 {
-	int r, g, b, a, x, y;
+    int r, g, b, a, x, y;
 
-	r = 255;
+    r = 255;
     g = 255;
     b = 255;
 

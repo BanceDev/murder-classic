@@ -21,6 +21,7 @@
 #include "player.h"
 #include "weapons.h"
 #include "gamerules.h"
+#include "client.h"
 
 #include "skill.h"
 #include "game.h"
@@ -32,6 +33,13 @@
 #define ITEM_RESPAWN_TIME 30
 #define WEAPON_RESPAWN_TIME 20
 #define AMMO_RESPAWN_TIME 20
+
+// roles
+enum {
+	ROLE_BYSTANDER = 0,
+	ROLE_MURDERER,
+	ROLE_DETECTIVE
+};
 
 CVoiceGameMgr g_VoiceGameMgr;
 
@@ -279,7 +287,8 @@ void CHalfLifeMultiplay::StartRound() {
 			if (pPlayer && pPlayer->IsPlayer()) {
 				pPlayer->StopObserver();
 				pPlayer->m_iPlayerRole = -1;
-				pPlayer->Spawn();
+				// TODO: verify this works
+				respawn(pPlayer->pev, false); // don't copy a corpse if we're in deathcam.
 				MESSAGE_BEGIN(MSG_ONE, gmsgRole, NULL, pPlayer->pev);
 				WRITE_BYTE(5);
 				MESSAGE_END();
@@ -295,7 +304,7 @@ void CHalfLifeMultiplay::StartRound() {
 				} else {
 					pPlayer->m_iPlayerRole = 0;
 				}
-				pPlayer->Spawn();
+				respawn(pPlayer->pev, false);
 				MESSAGE_BEGIN(MSG_ONE, gmsgRole, NULL, pPlayer->pev);
 				WRITE_BYTE(pPlayer->m_iPlayerRole);
 				MESSAGE_END();
@@ -458,6 +467,7 @@ void CHalfLifeMultiplay::ClientDisconnected(edict_t* pClient)
 			pPlayer->RemoveAllItems(true); // destroy all of the players weapons and items
 		}
 	}
+	// TODO: Only do this if the departure causes a win for one of the sides
 	GoToIntermission(BYSTANDER_WIN);
 }
 
@@ -480,6 +490,7 @@ bool CHalfLifeMultiplay::FPlayerCanTakeDamage(CBasePlayer* pPlayer, CBaseEntity*
 void CHalfLifeMultiplay::PlayerThink(CBasePlayer* pPlayer)
 {
 	// become spectator after joining if in game
+	// TODO: Verify that this works, im pretty sure its fucked
 	if (m_iInGame && pPlayer->m_iPlayerRole < 0 && pPlayer->IsAlive()) {
 		pPlayer->TakeDamage(CWorld::World->pev, CWorld::World->pev, 900, DMG_GENERIC);
 	}
@@ -496,7 +507,7 @@ void CHalfLifeMultiplay::PlayerThink(CBasePlayer* pPlayer)
 		pPlayer->m_afButtonReleased = 0;
 	}
 
-	if (gmanmode.value) {
+	if (gmanmode.value != 0) {
 		g_engfuncs.pfnSetClientKeyValue(pPlayer->entindex(), g_engfuncs.pfnGetInfoKeyBuffer(pPlayer->edict()), "model", "gman");
 	}
 }
@@ -525,11 +536,13 @@ void CHalfLifeMultiplay::PlayerSpawn(CBasePlayer* pPlayer)
 
 	if (addDefault)
 	{
+		// glock is replaced with empty hands tf??
 		pPlayer->GiveNamedItem("weapon_9mmhandgun");
-		if (pPlayer->m_iPlayerRole == 1) {
+		if (pPlayer->m_iPlayerRole == ROLE_MURDERER) {
 			pPlayer->GiveNamedItem("weapon_crowbar");
-		} else if (pPlayer->m_iPlayerRole == 2) {
+		} else if (pPlayer->m_iPlayerRole == ROLE_DETECTIVE) {
 			pPlayer->GiveNamedItem("weapon_357");
+			// give extra shots in larger lobbies
 			if (m_iClients > 6) {
 				pPlayer->GiveAmmo(m_iClients-6, "357", _357_MAX_CARRY);
 			}
@@ -1062,9 +1075,9 @@ void CHalfLifeMultiplay::GoToIntermission(int iWinner)
 		CBasePlayer* pPlayer = (CBasePlayer*)(UTIL_PlayerByIndex(i));
 		if (pPlayer && pPlayer->IsPlayer()) {
 			// kill any remaining players to cycle weapons
-			if (pPlayer->IsAlive()) {
-				pPlayer->TakeDamage(CWorld::World->pev, CWorld::World->pev, 900, DMG_GENERIC);
-			}
+			//if (pPlayer->IsAlive()) {
+			//	pPlayer->TakeDamage(CWorld::World->pev, CWorld::World->pev, 900, DMG_GENERIC);
+			//}
 			MESSAGE_BEGIN(MSG_ONE, gmsgRole, NULL, pPlayer->pev);
 			WRITE_BYTE(iWinner);
 			MESSAGE_END();
